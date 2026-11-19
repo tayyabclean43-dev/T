@@ -1,0 +1,232 @@
+{
+  "entities": {
+    "BusinessProfile": {
+      "title": "BusinessProfile",
+      "description": "Local business SEO profile, Google Business Profile link state, social handles, subscription billing, and aggregate metrics.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "businessName": { "type": "string" },
+        "category": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "ownerPhone": { "type": "string" },
+        "address": { "type": "string" },
+        "websiteUrl": { "type": "string" },
+        "description": { "type": "string" },
+        "ownerPhotoPath": { "type": "string" },
+        "serviceLogoPath": { "type": "string" },
+        "gmbStatus": { "type": "string", "enum": ["not_linked", "creating", "linked"] },
+        "gmbPlaceUrl": { "type": "string" },
+        "gmbCtaType": { "type": "string", "enum": ["CALL", "BOOK", "LEARN_MORE", "ORDER", "SIGN_UP"] },
+        "whatsappNumber": { "type": "string" },
+        "instagramHandle": { "type": "string" },
+        "facebookPage": { "type": "string" },
+        "autoReplyReviews": { "type": "boolean" },
+        "dailyAutoPost": { "type": "boolean" },
+        "monthlyWhatsappReport": { "type": "boolean" },
+        "gdprConsent": { "type": "boolean" },
+        "e2eeEnabled": { "type": "boolean" },
+        "workspaceRole": { "type": "string", "enum": ["OWNER"] },
+        "subscriptionTier": { "type": "string", "enum": ["TRIAL", "STARTER", "GROWTH", "ENTERPRISE"] },
+        "billingCycle": { "type": "string", "enum": ["MONTHLY", "HALF_YEARLY", "ANNUAL"] },
+        "trialActive": { "type": "boolean" },
+        "paymentMethodLabel": { "type": "string" },
+        "allTimeLeads": { "type": "integer" },
+        "allTimeCalls": { "type": "integer" },
+        "allTimeViews": { "type": "integer" },
+        "monthlyLeads": { "type": "integer" },
+        "monthlyCalls": { "type": "integer" },
+        "monthlyViews": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp via FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp via FieldValue.serverTimestamp()" }
+      },
+      "required": [
+        "userId", "businessName", "category", "ownerName", "ownerPhone", "address",
+        "websiteUrl", "description", "ownerPhotoPath", "serviceLogoPath",
+        "gmbStatus", "gmbPlaceUrl", "gmbCtaType", "whatsappNumber",
+        "instagramHandle", "facebookPage", "autoReplyReviews", "dailyAutoPost",
+        "monthlyWhatsappReport", "gdprConsent", "e2eeEnabled", "workspaceRole",
+        "subscriptionTier", "billingCycle", "trialActive", "paymentMethodLabel",
+        "allTimeLeads", "allTimeCalls", "allTimeViews",
+        "monthlyLeads", "monthlyCalls", "monthlyViews", "createdAt", "updatedAt"
+      ]
+    },
+    "SeoPost": {
+      "title": "SeoPost",
+      "description": "Scheduled or published social & GMB post with mandatory owner photo, service logo, owner phone, and address snapshot.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "workPerformedBy": { "type": "string" },
+        "channels": { "type": "array" },
+        "status": { "type": "string", "enum": ["DRAFT", "SCHEDULED", "PUBLISHED"] },
+        "scheduledDateLabel": { "type": "string" },
+        "ctaLabel": { "type": "string" },
+        "posterAccentHex": { "type": "string" },
+        "posterImagePath": { "type": "string" },
+        "ownerPhotoSnapshotPath": { "type": "string" },
+        "serviceLogoSnapshotPath": { "type": "string" },
+        "ownerPhoneSnapshot": { "type": "string" },
+        "addressSnapshot": { "type": "string" },
+        "viewsCount": { "type": "integer" },
+        "leadsCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "title", "description", "workPerformedBy", "channels", "status",
+        "scheduledDateLabel", "ctaLabel", "posterAccentHex", "posterImagePath",
+        "ownerPhotoSnapshotPath", "serviceLogoSnapshotPath", "ownerPhoneSnapshot",
+        "addressSnapshot", "viewsCount", "leadsCount", "createdAt", "updatedAt"
+      ]
+    },
+    "CustomerReview": {
+      "title": "CustomerReview",
+      "description": "Google Business Profile customer review and AI-generated owner reply.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "reviewerName": { "type": "string" },
+        "rating": { "type": "integer" },
+        "comment": { "type": "string" },
+        "replyText": { "type": "string" },
+        "replied": { "type": "boolean" },
+        "autoReplied": { "type": "boolean" },
+        "source": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "reviewerName", "rating", "comment", "replyText",
+        "replied", "autoReplied", "source", "createdAt", "updatedAt"
+      ]
+    },
+    "CompetitorEntry": {
+      "title": "CompetitorEntry",
+      "description": "Local search competitor benchmark and AI gap analysis.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "website": { "type": "string" },
+        "localRank": { "type": "integer" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "integer" },
+        "monthlyViewsEst": { "type": "integer" },
+        "seoScore": { "type": "integer" },
+        "aiGapSummary": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "name", "website", "localRank", "rating", "reviewCount",
+        "monthlyViewsEst", "seoScore", "aiGapSummary", "createdAt", "updatedAt"
+      ]
+    },
+    "KeywordTarget": {
+      "title": "KeywordTarget",
+      "description": "Tracked local SEO keyword and AI optimization tip.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "keyword": { "type": "string" },
+        "intent": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "currentRank": { "type": "integer" },
+        "aiTip": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "keyword", "intent", "difficulty", "currentRank", "aiTip",
+        "createdAt", "updatedAt"
+      ]
+    },
+    "TeamMember": {
+      "title": "TeamMember",
+      "description": "Role-based access control member entry for the business workspace.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "memberName": { "type": "string" },
+        "memberEmail": { "type": "string" },
+        "memberRole": { "type": "string", "enum": ["MANAGER", "EDITOR", "VIEWER"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "memberName", "memberEmail", "memberRole", "createdAt", "updatedAt"
+      ]
+    },
+    "SystemNotification": {
+      "title": "SystemNotification",
+      "description": "Real-time SEO alert and system status notification.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "severity": { "type": "string", "enum": ["INFO", "WARNING", "CRITICAL"] },
+        "readFlag": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "title", "message", "severity", "readFlag", "createdAt", "updatedAt"
+      ]
+    },
+    "AnalyticsLog": {
+      "title": "AnalyticsLog",
+      "description": "Monthly leads, calls, and views breakdown for dashboard charts and exports.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "monthLabel": { "type": "string" },
+        "leads": { "type": "integer" },
+        "calls": { "type": "integer" },
+        "views": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "monthLabel", "leads", "calls", "views", "createdAt", "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/BusinessProfile" },
+      "description": "Owner business SEO profile, GMB link, billing tier, and total/monthly metrics."
+    },
+    "/users/{userId}/posts/{postId}": {
+      "schema": { "$ref": "#/entities/SeoPost" },
+      "description": "Social and GMB posts with owner photo, logo, phone, and address poster snapshots."
+    },
+    "/users/{userId}/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/CustomerReview" },
+      "description": "Customer reviews and AI-assisted owner replies."
+    },
+    "/users/{userId}/competitors/{competitorId}": {
+      "schema": { "$ref": "#/entities/CompetitorEntry" },
+      "description": "Tracked local competitors and AI gap analysis."
+    },
+    "/users/{userId}/keywords/{keywordId}": {
+      "schema": { "$ref": "#/entities/KeywordTarget" },
+      "description": "Tracked SEO keywords and optimization advice."
+    },
+    "/users/{userId}/team_members/{memberId}": {
+      "schema": { "$ref": "#/entities/TeamMember" },
+      "description": "RBAC team members for the business workspace."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/SystemNotification" },
+      "description": "Real-time critical alerts and SEO system updates."
+    },
+    "/users/{userId}/analytics_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AnalyticsLog" },
+      "description": "Monthly analytics series for charts and PDF/CSV/WhatsApp reports."
+    }
+  }
+}

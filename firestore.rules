@@ -1,0 +1,451 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened reusable primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function validTimestampsOnCreate(data) {
+      return data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function validTimestampsOnUpdate(data) {
+      return data.createdAt == existing().createdAt &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 1. BusinessProfile validation
+    function isValidBusinessProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.businessName is string && data.businessName.size() >= 1 && data.businessName.size() <= 100 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 80 &&
+             data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 80 &&
+             data.ownerPhone is string && data.ownerPhone.size() <= 30 &&
+             data.address is string && data.address.size() <= 200 &&
+             data.websiteUrl is string && data.websiteUrl.size() <= 200 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.ownerPhotoPath is string && data.ownerPhotoPath.size() <= 500 &&
+             data.serviceLogoPath is string && data.serviceLogoPath.size() <= 500 &&
+             data.gmbStatus in ['not_linked', 'creating', 'linked'] &&
+             data.gmbPlaceUrl is string && data.gmbPlaceUrl.size() <= 300 &&
+             data.gmbCtaType in ['CALL', 'BOOK', 'LEARN_MORE', 'ORDER', 'SIGN_UP'] &&
+             data.whatsappNumber is string && data.whatsappNumber.size() <= 30 &&
+             data.instagramHandle is string && data.instagramHandle.size() <= 80 &&
+             data.facebookPage is string && data.facebookPage.size() <= 80 &&
+             data.autoReplyReviews is bool &&
+             data.dailyAutoPost is bool &&
+             data.monthlyWhatsappReport is bool &&
+             data.gdprConsent is bool &&
+             data.e2eeEnabled is bool &&
+             data.workspaceRole == 'OWNER' &&
+             data.subscriptionTier in ['TRIAL', 'STARTER', 'GROWTH', 'ENTERPRISE'] &&
+             data.billingCycle in ['MONTHLY', 'HALF_YEARLY', 'ANNUAL'] &&
+             data.trialActive is bool &&
+             data.paymentMethodLabel is string && data.paymentMethodLabel.size() <= 80 &&
+             data.allTimeLeads is int && data.allTimeLeads >= 0 &&
+             data.allTimeCalls is int && data.allTimeCalls >= 0 &&
+             data.allTimeViews is int && data.allTimeViews >= 0 &&
+             data.monthlyLeads is int && data.monthlyLeads >= 0 &&
+             data.monthlyCalls is int && data.monthlyCalls >= 0 &&
+             data.monthlyViews is int && data.monthlyViews >= 0;
+    }
+
+    // 2. SeoPost validation
+    function isValidSeoPost(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 1200 &&
+             data.workPerformedBy is string && data.workPerformedBy.size() >= 1 && data.workPerformedBy.size() <= 80 &&
+             data.channels is list && data.channels.size() >= 1 && data.channels.size() <= 5 &&
+             data.channels[0] is string &&
+             data.status in ['DRAFT', 'SCHEDULED', 'PUBLISHED'] &&
+             data.scheduledDateLabel is string && data.scheduledDateLabel.size() <= 40 &&
+             data.ctaLabel is string && data.ctaLabel.size() <= 40 &&
+             data.posterAccentHex is string && data.posterAccentHex.size() <= 16 &&
+             data.posterImagePath is string && data.posterImagePath.size() <= 500 &&
+             data.ownerPhotoSnapshotPath is string && data.ownerPhotoSnapshotPath.size() <= 500 &&
+             data.serviceLogoSnapshotPath is string && data.serviceLogoSnapshotPath.size() <= 500 &&
+             data.ownerPhoneSnapshot is string && data.ownerPhoneSnapshot.size() <= 30 &&
+             data.addressSnapshot is string && data.addressSnapshot.size() <= 200 &&
+             data.viewsCount is int && data.viewsCount >= 0 &&
+             data.leadsCount is int && data.leadsCount >= 0;
+    }
+
+    // 3. CustomerReview validation
+    function isValidCustomerReview(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.reviewerName is string && data.reviewerName.size() >= 1 && data.reviewerName.size() <= 80 &&
+             data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() >= 1 && data.comment.size() <= 1000 &&
+             data.replyText is string && data.replyText.size() <= 1000 &&
+             data.replied is bool &&
+             data.autoReplied is bool &&
+             data.source is string && data.source.size() >= 1 && data.source.size() <= 40;
+    }
+
+    // 4. CompetitorEntry validation
+    function isValidCompetitorEntry(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.website is string && data.website.size() <= 200 &&
+             data.localRank is int && data.localRank >= 1 && data.localRank <= 100 &&
+             data.rating is number && data.rating >= 0 && data.rating <= 5 &&
+             data.reviewCount is int && data.reviewCount >= 0 &&
+             data.monthlyViewsEst is int && data.monthlyViewsEst >= 0 &&
+             data.seoScore is int && data.seoScore >= 0 && data.seoScore <= 100 &&
+             data.aiGapSummary is string && data.aiGapSummary.size() <= 2000;
+    }
+
+    // 5. KeywordTarget validation
+    function isValidKeywordTarget(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.keyword is string && data.keyword.size() >= 1 && data.keyword.size() <= 120 &&
+             data.intent is string && data.intent.size() >= 1 && data.intent.size() <= 40 &&
+             data.difficulty is string && data.difficulty.size() >= 1 && data.difficulty.size() <= 40 &&
+             data.currentRank is int && data.currentRank >= 0 && data.currentRank <= 100 &&
+             data.aiTip is string && data.aiTip.size() <= 400;
+    }
+
+    // 6. TeamMember validation
+    function isValidTeamMember(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.memberName is string && data.memberName.size() >= 1 && data.memberName.size() <= 80 &&
+             data.memberEmail is string && data.memberEmail.size() >= 3 && data.memberEmail.size() <= 120 &&
+             data.memberRole in ['MANAGER', 'EDITOR', 'VIEWER'];
+    }
+
+    // 7. SystemNotification validation
+    function isValidSystemNotification(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 500 &&
+             data.severity in ['INFO', 'WARNING', 'CRITICAL'] &&
+             data.readFlag is bool;
+    }
+
+    // 8. AnalyticsLog validation
+    function isValidAnalyticsLog(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.monthLabel is string && data.monthLabel.size() >= 1 && data.monthLabel.size() <= 30 &&
+             data.leads is int && data.leads >= 0 &&
+             data.calls is int && data.calls >= 0 &&
+             data.views is int && data.views >= 0;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'businessName', 'category', 'ownerName', 'ownerPhone', 'address',
+                         'websiteUrl', 'description', 'ownerPhotoPath', 'serviceLogoPath',
+                         'gmbStatus', 'gmbPlaceUrl', 'gmbCtaType', 'whatsappNumber',
+                         'instagramHandle', 'facebookPage', 'autoReplyReviews', 'dailyAutoPost',
+                         'monthlyWhatsappReport', 'gdprConsent', 'e2eeEnabled', 'workspaceRole',
+                         'subscriptionTier', 'billingCycle', 'trialActive', 'paymentMethodLabel',
+                         'allTimeLeads', 'allTimeCalls', 'allTimeViews',
+                         'monthlyLeads', 'monthlyCalls', 'monthlyViews', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'businessName', 'category', 'ownerName', 'ownerPhone', 'address',
+                         'websiteUrl', 'description', 'ownerPhotoPath', 'serviceLogoPath',
+                         'gmbStatus', 'gmbPlaceUrl', 'gmbCtaType', 'whatsappNumber',
+                         'instagramHandle', 'facebookPage', 'autoReplyReviews', 'dailyAutoPost',
+                         'monthlyWhatsappReport', 'gdprConsent', 'e2eeEnabled', 'workspaceRole',
+                         'subscriptionTier', 'billingCycle', 'trialActive', 'paymentMethodLabel',
+                         'allTimeLeads', 'allTimeCalls', 'allTimeViews',
+                         'monthlyLeads', 'monthlyCalls', 'monthlyViews', 'createdAt', 'updatedAt'
+                       ]) &&
+                       validTimestampsOnCreate(incoming()) &&
+                       isValidBusinessProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().workspaceRole == existing().workspaceRole &&
+                       validTimestampsOnUpdate(incoming()) &&
+                       isValidBusinessProfile(incoming(), userId) && (
+                         // Action: Update business profile & branding
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'businessName', 'category', 'ownerName', 'ownerPhone', 'address',
+                           'websiteUrl', 'description', 'ownerPhotoPath', 'serviceLogoPath', 'updatedAt'
+                         ]) ||
+                         // Action: Update GMB & social channels
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'gmbStatus', 'gmbPlaceUrl', 'gmbCtaType', 'whatsappNumber',
+                           'instagramHandle', 'facebookPage', 'autoReplyReviews', 'dailyAutoPost',
+                           'monthlyWhatsappReport', 'updatedAt'
+                         ]) ||
+                         // Action: Update Privacy & GDPR
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'gdprConsent', 'e2eeEnabled', 'updatedAt'
+                         ]) ||
+                         // Action: Update Subscription & Billing
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'subscriptionTier', 'billingCycle', 'trialActive', 'paymentMethodLabel', 'updatedAt'
+                         ]) ||
+                         // Action: Record Analytics Leads/Calls/Views
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'allTimeLeads', 'allTimeCalls', 'allTimeViews',
+                           'monthlyLeads', 'monthlyCalls', 'monthlyViews', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Subcollection: Posts
+      match /posts/{postId} {
+        allow get: if isOwner(userId) && isValidId(postId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(postId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'description', 'workPerformedBy', 'channels', 'status',
+                           'scheduledDateLabel', 'ctaLabel', 'posterAccentHex', 'posterImagePath',
+                           'ownerPhotoSnapshotPath', 'serviceLogoSnapshotPath', 'ownerPhoneSnapshot',
+                           'addressSnapshot', 'viewsCount', 'leadsCount', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'description', 'workPerformedBy', 'channels', 'status',
+                           'scheduledDateLabel', 'ctaLabel', 'posterAccentHex', 'posterImagePath',
+                           'ownerPhotoSnapshotPath', 'serviceLogoSnapshotPath', 'ownerPhoneSnapshot',
+                           'addressSnapshot', 'viewsCount', 'leadsCount', 'createdAt', 'updatedAt'
+                         ]) &&
+                         validTimestampsOnCreate(incoming()) &&
+                         isValidSeoPost(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(postId) &&
+                         incoming().userId == existing().userId &&
+                         validTimestampsOnUpdate(incoming()) &&
+                         isValidSeoPost(incoming(), userId) && (
+                           // Action: Edit post & owner poster branding
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'title', 'description', 'workPerformedBy', 'channels', 'status',
+                             'scheduledDateLabel', 'ctaLabel', 'posterAccentHex', 'posterImagePath',
+                             'ownerPhotoSnapshotPath', 'serviceLogoSnapshotPath', 'ownerPhoneSnapshot',
+                             'addressSnapshot', 'updatedAt'
+                           ]) ||
+                           // Action: Publish / update status & engagement counts
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'status', 'viewsCount', 'leadsCount', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(postId);
+      }
+
+      // Subcollection: Customer Reviews
+      match /reviews/{reviewId} {
+        allow get: if isOwner(userId) && isValidId(reviewId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(reviewId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'reviewerName', 'rating', 'comment', 'replyText',
+                           'replied', 'autoReplied', 'source', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'reviewerName', 'rating', 'comment', 'replyText',
+                           'replied', 'autoReplied', 'source', 'createdAt', 'updatedAt'
+                         ]) &&
+                         validTimestampsOnCreate(incoming()) &&
+                         isValidCustomerReview(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(reviewId) &&
+                         incoming().userId == existing().userId &&
+                         validTimestampsOnUpdate(incoming()) &&
+                         isValidCustomerReview(incoming(), userId) && (
+                           // Action: Reply to review
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'replyText', 'replied', 'autoReplied', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(reviewId);
+      }
+
+      // Subcollection: Competitors
+      match /competitors/{competitorId} {
+        allow get: if isOwner(userId) && isValidId(competitorId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(competitorId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'name', 'website', 'localRank', 'rating',
+                           'reviewCount', 'monthlyViewsEst', 'seoScore', 'aiGapSummary',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'name', 'website', 'localRank', 'rating',
+                           'reviewCount', 'monthlyViewsEst', 'seoScore', 'aiGapSummary',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         validTimestampsOnCreate(incoming()) &&
+                         isValidCompetitorEntry(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(competitorId) &&
+                         incoming().userId == existing().userId &&
+                         validTimestampsOnUpdate(incoming()) &&
+                         isValidCompetitorEntry(incoming(), userId) && (
+                           // Action: Update competitor rank, benchmark metrics, or AI gap analysis
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'name', 'website', 'localRank', 'rating', 'reviewCount',
+                             'monthlyViewsEst', 'seoScore', 'aiGapSummary', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(competitorId);
+      }
+
+      // Subcollection: Keywords
+      match /keywords/{keywordId} {
+        allow get: if isOwner(userId) && isValidId(keywordId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(keywordId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'keyword', 'intent', 'difficulty', 'currentRank',
+                           'aiTip', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'keyword', 'intent', 'difficulty', 'currentRank',
+                           'aiTip', 'createdAt', 'updatedAt'
+                         ]) &&
+                         validTimestampsOnCreate(incoming()) &&
+                         isValidKeywordTarget(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(keywordId) &&
+                         incoming().userId == existing().userId &&
+                         validTimestampsOnUpdate(incoming()) &&
+                         isValidKeywordTarget(incoming(), userId) && (
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'currentRank', 'aiTip', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(keywordId);
+      }
+
+      // Subcollection: Team Members (RBAC)
+      match /team_members/{memberId} {
+        allow get: if isOwner(userId) && isValidId(memberId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(memberId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'memberName', 'memberEmail', 'memberRole', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'memberName', 'memberEmail', 'memberRole', 'createdAt', 'updatedAt'
+                         ]) &&
+                         validTimestampsOnCreate(incoming()) &&
+                         isValidTeamMember(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(memberId) &&
+                         incoming().userId == existing().userId &&
+                         validTimestampsOnUpdate(incoming()) &&
+                         isValidTeamMember(incoming(), userId) && (
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'memberRole', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(memberId);
+      }
+
+      // Subcollection: Notifications
+      match /notifications/{notificationId} {
+        allow get: if isOwner(userId) && isValidId(notificationId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(notificationId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'message', 'severity', 'readFlag', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'message', 'severity', 'readFlag', 'createdAt', 'updatedAt'
+                         ]) &&
+                         validTimestampsOnCreate(incoming()) &&
+                         isValidSystemNotification(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(notificationId) &&
+                         incoming().userId == existing().userId &&
+                         validTimestampsOnUpdate(incoming()) &&
+                         isValidSystemNotification(incoming(), userId) && (
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'readFlag', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(notificationId);
+      }
+
+      // Subcollection: Analytics Logs
+      match /analytics_logs/{logId} {
+        allow get: if isOwner(userId) && isValidId(logId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(logId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'monthLabel', 'leads', 'calls', 'views', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'monthLabel', 'leads', 'calls', 'views', 'createdAt', 'updatedAt'
+                         ]) &&
+                         validTimestampsOnCreate(incoming()) &&
+                         isValidAnalyticsLog(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(logId) &&
+                         incoming().userId == existing().userId &&
+                         validTimestampsOnUpdate(incoming()) &&
+                         isValidAnalyticsLog(incoming(), userId) && (
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'leads', 'calls', 'views', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(logId);
+      }
+    }
+  }
+}
